@@ -1,0 +1,26 @@
+name: Angular CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: SSH and deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd angular-crud-app || git clone https://github.com/Tariqu/angular-crud-app.git && cd angular-crud-app
+            git pull origin main
+            docker build -t angular-app .
+            docker stop angular-app || true && docker rm angular-app || true
+            docker run -d -p 80:80 --name angular-app angular-app
